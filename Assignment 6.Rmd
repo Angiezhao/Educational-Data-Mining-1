@@ -1,0 +1,108 @@
+---
+title: "Assignment 6 - Social Network Analysis"
+author: "Charles Lang"
+date: "March 5, 2016"
+output: html_document
+---
+
+In Assignment 6 we will be looking at some disciplinary data from a middle school. The file "discipline-data.csv" shows which teacher sent which student to the principal during the semester.
+
+We will be using the "igraph" package to visualize the disciplinary relationships between teachers and students as a network. You can read more about igraph here:
+
+http://igraph.org/r/
+
+Start by installing the "igraph" package. Once you have installed igraph, load the package.
+
+Now upload the data file "discipline-data.csv" as a data frame called "D1". Each row is a disciplinary action from a teacher to a student so the first line shows that teacher "E" sent student "21" to the principal. It also shows the gender of both the teacher and student and the student's main elective field of study ("major"") and the field that the teacher instructs in ("t.expertise").
+
+Before you proceed, you will need to change the data type of the student id variable. Since it is a number R will automatically think it is an integer and code it as such (look at the list of variables by clicking on the data frame arrow in the Data pane. Here you will see the letters "int"" next to the stid variable, that stands for integer). However, in this case we are treating the variable as a category, there is no numeric meaning in the variable. So we need to change the format to be a category, what R calls a "factor". We can do this with the following code:
+
+```{r}
+D1$stid <- as.factor(D1$stid)
+```
+
+igraph requires data to be in a particular structure. There are several structures that it can use but we will be using a combination of an "edge list" and a "vertex list". As you might imagine ehe edge list contains a list of all the relationships between students and teachers and any characteristics of those edges that we might be interested in. There are two essential variables in the edge list a "from" variable and a "to" variable that descibe the relationships between vertices (a disciplinary action is given "from" and teacher "to" a student). While the vertix list contains all the characteristics of those vertices, in our case gender and major.
+
+So let's convert our data into an edge list!
+
+First we will isolate the variables that are of interest: tid and stid
+
+```{r}
+library(dplyr)
+
+D2 <- dplyr::select(D1, tid, stid)
+```
+
+Since our data represnts every time a teacher sends a student to the principal there are multiple rows when the same teacher sends the same student. We want to collapse these into a single row, with a variable that shows how many times a teacher-student pair appears.
+
+```{r}
+
+EDGE <- dplyr::count(D2, tid, stid)
+
+names(EDGE) <- c("from", "to", "count")
+
+```
+
+EDGE is your edge list. Now we need to make the vertex list, a list of all the teachers and students and their characteristics in our network.
+
+```{r}
+
+#First we will separate the teachers from our original data frame
+V.TCH <- dplyr::select(D1, tid, t.gender, t.expertise)
+#Remove all the repeats so that we just have a list of each teacher and their characteristics
+V.TCH <- unique(V.TCH)
+#Add a variable that describes that they are teachers
+V.TCH$group <- "teacher"
+
+#Now repeat this process for the students
+V.STD <- dplyr::select(D1, stid, s.gender, s.major)
+V.STD <- unique(V.STD)
+V.STD$group <- "student"
+
+#Make sure that the student and teacher data frames have the same variables names
+names(V.TCH) <- c("id", "gender", "topic", "group")
+names(V.STD) <- c("id", "gender", "topic", "group")
+
+#Bind the two data frames together (you will get a warning because the teacher data frame has 5 types of id (A,B,C,D,E) and the student has 25 (1-30), this isn't a problem)
+VERTEX <- dplyr::bind_rows(V.TCH, V.STD)
+
+```
+
+Now we have both a Vertex and Edge list it is time to plot our graph!
+
+```{r}
+#Load the igraph package
+
+library(igraph)
+
+#First we will make an object that contains the graph information using our two dataframes EDGE and VERTEX. Notice that we have made "directed = TRUE" - our graph is directed since discipline is being given from a teacher to a student.
+
+g <- graph.data.frame(EDGE, directed=TRUE, vertices=VERTEX)
+
+#Now we can plot our graph using the force directed graphing technique - our old friend Fruchertman-Reingold!
+
+plot(g,layout=layout.fruchterman.reingold)
+
+#There are many ways to change the attributes of the graph to represent different characteristics of the newtork. For example, we can color the nodes according to gender.
+
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender)
+
+#We can change the thickness of the edge according to the number of times a particular teacher has sent a particular student to the principal.
+
+plot(g,layout=layout.fruchterman.reingold, vertex.color=VERTEX$gender, edge.width=EDGE$count)
+
+#Other attributes you may want to change are:
+
+#Arrow size
+edge.arrow.size=
+
+#Remove the labels
+vertex.label=NA
+
+#Vertex size
+vertex.size=
+  
+#And many others!
+```
+
+Play around with different graphs and then save your final version to the repo. Create a Zotero item for this R program and then commit, push and pull.
