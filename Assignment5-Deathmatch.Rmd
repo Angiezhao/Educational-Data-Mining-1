@@ -1,0 +1,66 @@
+---
+title: "Assignment 5 - Death Match Edition"
+author: "Charles Lang"
+date: "February 28, 2016"
+output: html_document
+---
+In this assignment you will be applying Principal Component Analysis to some class data. PCA is a form of feature extraction, where we group variables that belong together. First you will need to read over the introduction to PCA in the repo ("principal_components.pdf") and make notes on the uses and limitations of PCA. Create a Zotero item for the pdf and attach your notes to it.
+
+Next, upload the data "GSS_Meritocracy.csv" as a dataframe in R called DF. Look at the data frame and click on it to see attributes of the variables in the "Data"" pane. This data is part of a German attitudes survey about meritocracy. The first variable describes whether people believe they live in a meritocracy and the other variables how important people believe particular attribues are to "getting ahead" in German society. 
+```{r}
+DF <- read.csv("~/assignment5_death/GSS_Meritocracy.csv", sep=",", header=TRUE)
+View(DF)
+```
+
+Create a correlogram of all the variables for a first look at what variables are associated with what.
+```{r}
+install.packages("corrgram")
+library(corrgram)
+corrgram(DF, order=TRUE, lower.panel=panel.ellipse, upper.panel=panel.pts, text.panel=panel.txt, diag.panel=panel.minmax, main="meritocracy attitudes")
+```
+
+Once you have created the correlogram you might have some idea about which variables belong with which. Let's see if you're right!
+
+Running a PCA requires very little code, but the data must be pre-processed so tha the algorithm can interpret it. First of all you will need to remove missing values by listwise deletion:
+
+```{r}
+DF <- na.omit(DF)
+```
+
+Next you will need to scale the data so that the variance is standardardized across variables. If we do not do this then the variable with the greatest variance will dominate the analysis.
+
+```{r}
+DF_scaled <- scale(DF)
+View(DF_scaled)
+```
+
+Now, we can run our PCA. We will create a object "pc" that contains all the information about our PCA.
+
+```{r}
+pc <- princomp(DF_scaled)
+c(pc)
+```
+
+There are several useful diagnostics we can look at to interpret he PCA results.
+
+```{r}
+summary(pc)
+loadings(pc)
+```
+
+Explain what summary and loadings describe below:
+
+summary() descrbies the importance of each component in descending order. From the output, we know that the first two componenets represents more than 53% of the variance of the data. loading() shows how each component is constructed from the original features, it contains the coefficents of the linear combination. An empty cell means a coefficent of 0.
+
+There are also sveral diagnostic plots that are useful. A "scree plot" (named for the type hill or mountain it resembles) that plots the amount of variance associated with each principal component. 
+```{r}
+plot(pc, type = 'l')
+```
+
+And a biplot (a four axes scatter plot) that shows the scores for each person on the first two components and the loading of each variable on the first two components. (This plot will take some time for R to render - there is a lot of data to crunch here!). Interpret the plot and describe what you can conclude from it. Do the groupings of variables make sense?
+
+```{r}
+biplot(pc, cex =0.4)
+```
+
+The plot shows how are the dataset as well as the original features (red vectors) mapped to the plane defined by the first two components. From the plot, it's pretty obvious that most of the data points have a negative value on component 1, and the number of data points which have negative component 2 is almost the same as the number of data point with positive component 2.
